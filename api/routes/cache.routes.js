@@ -6,7 +6,6 @@ module.exports = app => {
     router.post("/", caches.create)
     router.get("/", caches.findAll)
     router.get("/:id", caches.findOne)
-    router.put("/:id", caches.update)
     router.delete("/:id", caches.delete)
     router.delete("/", caches.deleteAll)
 

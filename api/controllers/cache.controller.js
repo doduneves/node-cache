@@ -1,36 +1,46 @@
 const db = require("../models")
 const Cache = db.caches
 
+const createNewRandomString = (length = 32) => {
+    let result = ''
+    let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    let charactersLength = characters.length
+
+    for ( let i = 0; i < length; i++ ) {
+        result += characters.charAt(Math.floor(Math.random() * charactersLength));
+    }
+    return result;
+}
+
+const createNewCache = (key) => {
+    const cache = new Cache({
+        key: key,
+        publicationDate: Date.now()
+    })
+
+    cache.save(cache)
+    return cache
+}
+
 exports.create = (req, res) => {
-    if (!req.body.title) {
+    if (!req.body.key) {
         res.status(400).send({ message: "Content can not be empty!" })
         return
     }
 
-    const cache = new Cache({
-        title: req.body.title,
-        description: req.body.description,
-        // published: req.body.published ? req.body.published : false TODO
-    })
+    const cache = createNewCache(req.body.key, res)
+    if (cache){
+        res.send(cache)
+    }else{
+        res.status(500).send({
+            message: "Some error while trying to insert a new cache data."
+        })
+    }
 
-    cache
-        .save(cache)
-        .then(data => {
-            res.send(data)
-        })
-        .catch(err => {
-            res.status(500).send({
-                message:
-                err.message || "Some error occurred while creating the Cache data."
-            })
-        })
 }
 
 exports.findAll = (req, res) => {
-    const title = req.query.title
-    var condition = title ? { title: { $regex: new RegExp(title), $options: "i" } } : {}
-
-    Cache.find(condition)
+    Cache.find()
         .then(data => {
             res.send(data)
         })
@@ -43,58 +53,46 @@ exports.findAll = (req, res) => {
 }
 
 exports.findOne = (req, res) => {
-    const id = req.params.id
+    const key = req.params.id
 
-    Cache.findById(id)
+    Cache.find({ key: key })
         .then(data => {
-            if (!data)
-            res.status(404).send({ message: "Not found cache with id " + id })
-            else res.send(data)
-        })
-        .catch(err => {
-            res
-            .status(500)
-            .send({ message: "Error retrieving cache with id=" + id })
-        })
-}
-
-exports.update = (req, res) => {
-    if (!req.body) {
-        return res.status(400).send({
-            message: "Data to update can not be empty!"
-        })
-    }
-
-    const id = req.params.id
-
-    Cache.findByIdAndUpdate(id, req.body, { useFindAndModify: false })
-        .then(data => {
-            if (!data) {
-            res.status(404).send({
-                message: `Cannot update cache with id=${id}`
-            })
-            } else res.send({ message: "Cache was updated successfully." })
+            if(!data || data.length == 0){
+                console.log("Cache miss")
+                const newKey = createNewRandomString()
+                const createdCache = createNewCache(newKey)
+                res.send(createdCache.key)
+            }else{
+                console.log("Cache hit!")
+                res.send(data)
+            }
         })
         .catch(err => {
             res.status(500).send({
-                message: "Error updating cache with id=" + id
+                message: "Error retrieving cache with key=" + key
             })
         })
 }
 
 exports.delete = (req, res) => {
-    const id = req.params.id
+    const key = req.params.id
 
-    Cache.findByIdAndRemove(id)
+    Cache.deleteMany({ key: key })
         .then(data => {
             if (!data) {
-            res.status(404).send({
-                message: `Cannot delete cache with id=${id}.`
-            })
+                res.status(404).send({
+                    message: `Cannot delete cache with id=${id}.`
+                })
             } else {
-            res.send({
-                message: "Cache was deleted successfully!"
-            })
+                if (data.deletedCount != 0){
+                    res.send({
+                        message: `Cache ${key} was deleted successfully!`
+                    })
+                }else{
+                    res.send({
+                        message: `Cache ${key} not found!`
+                    })
+                }
             }
         })
         .catch(err => {
