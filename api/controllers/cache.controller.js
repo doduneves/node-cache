@@ -1,7 +1,10 @@
+const envConfig = require("../config/env.config.js")
+
 const db = require("../models")
 const Cache = db.caches
 
-const cacheLimit = 10
+const cacheLimit = envConfig.cacheLimit
+
 
 // Generate a random string
 const createNewRandomString = (length = 32) => {
@@ -24,32 +27,20 @@ const createNewCache = (key, content = '', timeToLive = 1440) => {
         publicationDate: Date.now()
     })
 
-    // Get all cache data to verify if passed the limit
-    Cache.find()
-        .sort('-publicationDate')
-        .then(data => {
-            if(data.length > cacheLimit){
-                Cache.deleteOne()
-                    .sort('publicationDate')
-                    .then(lastCache => {
-                        console.log("Limit cache data reached out. Last cache deleted")
-                    })
-            }
-        })
-
-    cache.save(cache).then(data =>
+    cache.save(cache).then(data => {
         // Get all cache data to verify if passed the limit
         Cache.find()
             .sort('-publicationDate')
             .then(allData => {
                 if(allData.length > cacheLimit){
-                Cache.deleteOne()
-                    .sort('publicationDate')
-                    .then(lastCache => {
-                        console.log("Limit cache data reached out. Last cache deleted")
-                    })
-            }
-        })
+                    Cache.deleteOne()
+                        .sort('publicationDate')
+                        .then(lastCache => {
+                            console.log("Limit cache data reached out. Last cache deleted")
+                        })
+                }
+            })
+        }
     )
     return cache
 }

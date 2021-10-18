@@ -1,3 +1,5 @@
+const envConfig = require("./api/config/env.config.js")
+
 const express = require("express")
 const cors = require("cors")
 
@@ -17,7 +19,7 @@ app.get("/", (req, res) => {
 
 require("./api/routes/cache.routes")(app);
 
-const PORT = process.env.PORT || 8077
+const PORT = envConfig.port || 8080
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}.`)
 })
